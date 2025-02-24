@@ -33,7 +33,7 @@ class MainActivity : ComponentActivity() {
             val viewModel: LocationViewModel = viewModel()
             ULocationMapTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MyApp()
+                    MyApp(viewModel = viewModel)
 //                    Greeting(
 //                        name = "Android",
 //                        modifier = Modifier.padding(innerPadding)
@@ -62,13 +62,20 @@ fun LocationDisplay(
     viewModel: LocationViewModel,
     context: Context
 ) {
+    val location = viewModel.location.value
+
+    val address = location?.let {
+        locationUtils.reverseGeocodeLocation(location)
+    }
+
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
         onResult = { permissions ->
             if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
                 && permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
             ) {
-                // Update Location
+                // Update Location (i have access)
+                locationUtils.requestLocationUpdates(viewModel = viewModel)
             } else {
                 // Ask for permission
                 val rationaleRequired = ActivityCompat.shouldShowRequestPermissionRationale(
@@ -101,11 +108,20 @@ fun LocationDisplay(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "Location not available")
+        if(location != null){
+            Text(text = "Latitude: ${location.latitude}")
+            Text(text = "Longitude: ${location.longitude}")
+            Text(text = "Address: $address")
+        }
+        else{
+            Text(text = "Location not available")
+        }
+
         Button(
             onClick = {
                 if (locationUtils.hasLocationPermission(context)) {
                     // Update Location
+                    locationUtils.requestLocationUpdates(viewModel = viewModel)
                 } else {
                     //Request Location permission
                     requestPermissionLauncher.launch(
